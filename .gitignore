@@ -1,7 +1,14 @@
+.ccls-cache
 *.o
+*.o.cmd
 *.ko
+*.ko.cmd
 *.order
+*.order.cmd
 *.symvers
+*.symvers.cmd
 *.mod
+*.mod.cmd
 *.mod.c
 *.mod.o
+*.mod.o.cmd
