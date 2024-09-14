@@ -1,5 +1,5 @@
-// Produce kernel logs when set to 1
-#define DEBUG = 1
+// Produce kernel logs when defined
+#define DEBUG
 
 // Function prototypes
 int get_system(void);

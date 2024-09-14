@@ -11,13 +11,17 @@
 #include <linux/fdtable.h>
 #include <linux/kprobes.h>
 
-#include "ophicordys.h"
-
-#define KPROBE_LOOKUP 1
-
 MODULE_AUTHOR("B1TC0R3");
 MODULE_DESCRIPTION("Example LKM");
 MODULE_LICENSE("GPL");
+
+#define KPROBE_LOOKUP 1
+#define DEBUG
+
+int get_system(void);
+unsigned long* get_syscall_table(void);
+int set_memory_rw(unsigned long cr0);
+int set_memory_ro(unsigned long cr0);
 
 typedef unsigned long (*kln_func_t)(const char* name);
 
@@ -61,24 +65,38 @@ unsigned long* get_syscall_table(void) {
     return syscall_table;
 }
 
+int set_memory_rw(unsigned long cr0) { return 0; }
+
+int set_memory_ro(unsigned long cr0) { return 0; }
+
 static int __init ophicordys_init(void) {
+    #ifdef DEBUG
     int pid = task_pid_nr(current);
     printk(KERN_INFO "%s: module loaded (PID: %i).\n", THIS_MODULE->name, pid);
+    #endif
 
     unsigned long* syscall_table = get_syscall_table();
-    if (syscall_table != NULL) {
-        printk(KERN_INFO "%s: syscall table located at: %lx\n", THIS_MODULE->name, *syscall_table);
 
-    } else {
-        printk(KERN_INFO "%s: failed to fetch syscall table.\n", THIS_MODULE->name);
+    if (syscall_table == NULL)
+        return -1;
 
-    }
+    #ifdef DEBUG
+    printk(KERN_INFO "%s: syscall table located at: %lx\n", THIS_MODULE->name, *syscall_table);
+    #endif
+
+    unsigned long cr0 = read_cr0();
+
+    #ifdef DEBUG
+    printk(KERN_INFO "%s: identified cr0: %lx\n", THIS_MODULE->name, cr0);
+    #endif
 
     return 0;
 }
 
 static void __exit ophicordys_exit(void) {
+    #ifdef DEBUG
     printk(KERN_INFO "%s: module unloaded.\n", THIS_MODULE->name);
+    #endif
 }
 
 module_init(ophicordys_init);
